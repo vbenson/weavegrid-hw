@@ -36,4 +36,5 @@ COPY . .
 EXPOSE 5000
 
 # Run the application
-ENTRYPOINT ["python", "server.py"]
+ENTRYPOINT ["python", "server.py", "--root_dir"]
+CMD ["."]
