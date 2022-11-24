@@ -37,4 +37,4 @@ EXPOSE 5000
 
 # Run the application
 ENTRYPOINT ["python", "server.py", "--root_dir"]
-CMD ["."]
+CMD ["/root_dir"]

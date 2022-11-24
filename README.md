@@ -12,6 +12,14 @@ the root directory to the desired diectory.
 * Docker
 
 # Usage
+Either run using the provided run.sh script or run the commands below yourself.
+To run the run.sh script, simply provide the full local path you'd like to 
+browse as an argument.
+```bash
+sh run.sh <local directory to browse>
+```
+
+Otherwise run these commands yourself.
 ```bash
 # Build the docker container image
 docker build -t weavegrid-hw:dev .

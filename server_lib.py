@@ -15,7 +15,7 @@ def get_contents(path):
     content_list = []
     for dir_entry in os.scandir(path):
         content = {}
-        stats = dir_entry.stat()
+        stats = dir_entry.stat(follow_symlinks=False)
         if dir_entry.is_dir():
             content['name'] = dir_entry.name + '/'
             content['size'] = 0
