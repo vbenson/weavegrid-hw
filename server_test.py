@@ -2,7 +2,7 @@ import os
 import tempfile
 import unittest
 
-from server_lib import get_contents, delete_content
+from server_lib import add_content, delete_content, get_contents
 
 class TestServerLib(unittest.TestCase):
     def setUp(self):
@@ -22,6 +22,8 @@ class TestServerLib(unittest.TestCase):
         os.chmod(self.file_a.name, 0o640)
         self.file_b = tempfile.NamedTemporaryFile(
             dir=self.dir_b.name, delete=False)
+        self.file_b.write(b'Original text.')
+        self.file_b.flush()
         self.file_hidden = tempfile.NamedTemporaryFile(
             prefix='.', dir=self.dir_root.name)
         self.file_hidden.write(b'Hello World!')
@@ -82,6 +84,102 @@ class TestServerLib(unittest.TestCase):
     def test_read_private_dir(self):
         get_contents(self.dir_private.name)
 
+    def test_add_empty_file(self):
+        new_file_path = os.path.join(self.dir_b.name, 'new_file.txt')
+        info = {'make_dir': False}
+        output = add_content(new_file_path, info)
+        expected_output = self.dir_b.name, 302
+        self.assertEqual(output, expected_output)
+        self.assertTrue(os.path.exists(new_file_path))
+        f = open(new_file_path, 'r')
+        self.assertEqual(f.read(), '')
+        f.close()
+
+        # Cleanup
+        os.remove(new_file_path)
+
+    def test_add_file_invalid_content(self):
+        new_file_path = os.path.join(self.dir_b.name, 'new_file.txt')
+        info = {'make_dir': False, 'text': 123}
+        output = add_content(new_file_path, info)
+        expected_output = self.dir_b.name, 302
+        self.assertEqual(output, expected_output)
+        self.assertTrue(os.path.exists(new_file_path))
+        f = open(new_file_path, 'r')
+        self.assertEqual(f.read(), '')
+        f.close()
+
+        # Cleanup
+        os.remove(new_file_path)
+
+    def test_add_file_with_content(self):
+        new_file_path = os.path.join(self.dir_b.name, 'new_file.txt')
+        text = 'Hello World!'
+        info = {'make_dir': False, 'text': text}
+        output = add_content(new_file_path, info)
+        expected_output = self.dir_b.name, 302
+        self.assertEqual(output, expected_output)
+        self.assertTrue(os.path.exists(new_file_path))
+        f = open(new_file_path, 'r')
+        self.assertEqual(f.read(), text)
+        f.close()
+
+        # Cleanup
+        os.remove(new_file_path)
+
+    def test_add_existing_file(self):
+        new_file_path = self.file_b.name
+        info = {'make_dir': False, 'text': 'Hello World!'}
+        output = add_content(new_file_path, info)
+        expected_output = self.dir_b.name, 304
+        self.assertEqual(output, expected_output)
+        self.assertTrue(os.path.exists(new_file_path))
+
+        # Ensure that the contents were not overwritten.
+        f = open(new_file_path, 'r')
+        self.assertEqual(f.read(), 'Original text.')
+        f.close()
+
+    def test_add_dir(self):
+        new_file_path = os.path.join(self.dir_b.name, 'new_dir')
+        info = {'make_dir': True}
+        output = add_content(new_file_path, info)
+        expected_output = new_file_path, 302
+        self.assertEqual(output, expected_output)
+        self.assertTrue(os.path.exists(new_file_path))
+        self.assertTrue(os.path.isdir(new_file_path))
+
+        # Cleanup
+        os.rmdir(new_file_path)
+
+    def test_add_invalid_make_dir(self):
+        new_file_path = os.path.join(self.dir_b.name, 'new_content')
+        info = {'make_dir': 123}
+        output = add_content(new_file_path, info)
+        expected_output = new_file_path, 304
+        self.assertEqual(output, expected_output)
+        self.assertFalse(os.path.exists(new_file_path))
+
+    def test_add_existing_dir(self):
+        new_file_path = self.dir_root.name
+        info = {'make_dir': True}
+        output = add_content(new_file_path, info)
+        expected_output = new_file_path, 304
+        self.assertEqual(output, expected_output)
+        self.assertTrue(os.path.exists(new_file_path))
+        self.assertTrue(os.path.isdir(new_file_path))
+
+        # Ensure that the dir contents were not removed.
+        self.assertGreater(len(os.listdir(new_file_path)), 0)
+
+    def test_add_invalid_info(self):
+        new_file_path = os.path.join(self.dir_b.name, 'new_content')
+        info = {'missing': 123}
+        output = add_content(new_file_path, info)
+        expected_output = new_file_path, 304
+        self.assertEqual(output, expected_output)
+        self.assertFalse(os.path.exists(new_file_path))
+
     def test_delete_file(self):
         output = delete_content(self.file_b.name)
         expected_output = self.dir_b.name, 302
@@ -96,7 +194,7 @@ class TestServerLib(unittest.TestCase):
         self.assertFalse(os.path.exists(self.file_b.name))
 
     def test_delete_nonexistent_path(self):
-        path = "fake_path_that_does_not_exist"
+        path = 'fake_path_that_does_not_exist'
         output = delete_content(path)
         expected_output = path, 304
         self.assertEqual(output, expected_output)

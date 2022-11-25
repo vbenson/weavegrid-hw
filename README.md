@@ -8,6 +8,10 @@ on http://localhost:5000/. Available operations:
 supply the path from the root directory to the desired directory. The output is 
 a json string giving the name, size, owner, and permissions for each item in the 
 directory.
+* POST requests add the file/directory at the path (starting from the root
+directory again). If it already exists then do nothing and leave the original 
+untouched. Can optionally write content to the new files as well. Must provide
+json data with a boolean 'make_dir' field, and optionally string 'text' field.
 * DELETE requests delete the file/directory at the path (starting from the root 
 directory again). If a directory is given, this will also delete all contents 
 of the directory. If successful this will redirect to the parent directory,
@@ -49,7 +53,13 @@ curl http://localhost:5000/
 # Get the contents of directory foo within the root directory.
 curl http://localhost:5000/foo
 
-# Delete the file bar.txt
+# Write a new directory.
+curl -i -X POST -H "Content-Type: application/json" -d "{\"make_dir\":true\"}" http://localhost:5000/vmb34/foo
+
+# Write a new file, bar.txt with provided text.
+curl -i -X POST -H "Content-Type: application/json" -d "{\"make_dir\":false,\"text\":\"Hello World\"}" http://localhost:5000/vmb34/foo/bar.txt
+
+# Delete the file bar.txt.
 curl -X DELETE http://localhost:5000/foo/bar.txt
 
 # Delete the directory foo (and all its contents).
