@@ -10,8 +10,8 @@ a json string giving the name, size, owner, and permissions for each item in the
 directory.
 * DELETE requests delete the file/directory at the path (starting from the root 
 directory again). If a directory is given, this will also delete all contents 
-of the directory. A info string giving the success/failure of the operation is 
-returned.
+of the directory. If successful this will redirect to the parent directory,
+otherwise it will redirect to the requested path.
 
 # Requirements
 * Docker

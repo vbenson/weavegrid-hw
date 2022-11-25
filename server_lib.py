@@ -40,13 +40,14 @@ def delete_content(path):
         path: A string giving the file system path to a directory or file.
     
     Returns:
-        An info string.
+        A tuple of the parent directory if successful, else the original path
+        and a statuscode.
     """
     if os.path.isdir(path):
         shutil.rmtree(path)
-        return "Removed directory: " + path
+        return os.path.dirname(path), 302
     elif os.path.isfile(path):
         os.remove(path)
-        return "Removed file: " + path
+        return os.path.dirname(path), 302
     else:
-        return "Flie/Directory does not exist: " + path
+        return path, 304

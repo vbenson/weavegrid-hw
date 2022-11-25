@@ -3,7 +3,7 @@ import json
 import sys
 
 from absl import app as absl_app, flags
-from flask import Flask, request
+from flask import Flask, redirect, request, url_for
 
 from server_lib import get_contents, delete_content
 
@@ -20,8 +20,8 @@ def view_dir(path):
     if request.method == 'GET':
         return json.dumps(get_contents(full_path))
     if request.method == 'DELETE':
-        return delete_content(full_path)
-    return "Invalid request"
+        redirect_path, code = delete_content(full_path)
+        return redirect(url_for('view_dir', path=redirect_path), code=code)
 
 
 if __name__ == '__main__':

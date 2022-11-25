@@ -84,13 +84,13 @@ class TestServerLib(unittest.TestCase):
 
     def test_delete_file(self):
         output = delete_content(self.file_b.name)
-        expected_output = "Removed file: " + self.file_b.name
+        expected_output = self.dir_b.name, 302
         self.assertEqual(output, expected_output)
         self.assertFalse(os.path.exists(self.file_b.name))
 
     def test_delete_dir(self):
         output = delete_content(self.dir_b.name)
-        expected_output = "Removed directory: " + self.dir_b.name
+        expected_output = self.dir_root.name, 302
         self.assertEqual(output, expected_output)
         self.assertFalse(os.path.exists(self.dir_b.name))
         self.assertFalse(os.path.exists(self.file_b.name))
@@ -98,7 +98,7 @@ class TestServerLib(unittest.TestCase):
     def test_delete_nonexistent_path(self):
         path = "fake_path_that_does_not_exist"
         output = delete_content(path)
-        expected_output = "Flie/Directory does not exist: " + path
+        expected_output = path, 304
         self.assertEqual(output, expected_output)
 
 if __name__ == '__main__':
