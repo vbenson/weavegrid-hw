@@ -7,6 +7,6 @@ if [ -z "$DIR" ]
     exit 1
 fi
 
-docker kill weavegrid-hw:dev
+docker kill vbenson
 docker build -t weavegrid-hw:dev .
-docker run -p 5000:5000 --mount type=bind,source=$DIR,target=/root_dir --rm weavegrid-hw:dev
+docker run -p 5000:5000 --mount type=bind,source=$DIR,target=/root_dir --name vbenson --rm weavegrid-hw:dev

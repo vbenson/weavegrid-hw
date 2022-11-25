@@ -1,5 +1,6 @@
 import os
 from pwd import getpwuid
+import shutil
 
 def get_contents(path):
     """Returns a list of file/directory info showing the contents of 'path'.
@@ -31,3 +32,21 @@ def get_contents(path):
         content_list.append(content)
 
     return content_list
+
+def delete_content(path):
+    """Deletes the supplied directory (including all contents) or file.
+
+    Args:
+        path: A string giving the file system path to a directory or file.
+    
+    Returns:
+        An info string.
+    """
+    if os.path.isdir(path):
+        shutil.rmtree(path)
+        return "Removed directory: " + path
+    elif os.path.isfile(path):
+        os.remove(path)
+        return "Removed file: " + path
+    else:
+        return "Flie/Directory does not exist: " + path
