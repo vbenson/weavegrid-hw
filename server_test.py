@@ -1,13 +1,25 @@
 import os
 import tempfile
+import shutil
 import unittest
 
-from server_lib import add_content, delete_content, get_contents
+from server_lib import add_content, delete_content, get_content, replace_content
+
 
 class TestServerLib(unittest.TestCase):
     def setUp(self):
         self.maxDiff = None
-        # Create tmp directories & files.
+        # Create tmp directories & files having the following structure:
+        # dir_root
+        #       |- dir_a
+        #       |- dir_b
+        #       |      |- file_b
+        #       |- dir_hidden
+        #       |      |- file_c
+        #       |- dir_private
+        #       |- file_a
+        #       |- file_hidden
+
         self.dir_root = tempfile.TemporaryDirectory()
         self.dir_a = tempfile.TemporaryDirectory(dir=self.dir_root.name)
         self.dir_b = tempfile.TemporaryDirectory(
@@ -42,18 +54,17 @@ class TestServerLib(unittest.TestCase):
         self.dir_root.cleanup()
 
         return super().tearDown()
-        
 
     def mk_dict(self, name, suffix, size, owner, permissions):
         return {
             'name': str(os.path.basename(name) + suffix),
-            'size': size, 
-            'owner': owner, 
+            'size': size,
+            'owner': owner,
             'permissions': permissions
-            }
+        }
 
     def test_read_basic_dir(self):
-        output = get_contents(self.dir_root.name)
+        output = get_content(self.dir_root.name)
         expected_output = [
             self.mk_dict(self.dir_a.name, os.sep, 0, 'appuser', '700'),
             self.mk_dict(self.dir_b.name, os.sep, 0, 'appuser', '755'),
@@ -63,26 +74,25 @@ class TestServerLib(unittest.TestCase):
             self.mk_dict(self.file_hidden.name, '', 12, 'appuser', '600')]
         self.assertCountEqual(output, expected_output)
 
-
     def test_read_hidden_dir(self):
-        output = get_contents(self.dir_hidden.name)
+        output = get_content(self.dir_hidden.name)
         expected_output = [
             self.mk_dict(self.file_c.name, '', 0, 'appuser', '600')
         ]
         self.assertCountEqual(output, expected_output)
-    
+
     def test_read_empty_dir(self):
-        output = get_contents(self.dir_a.name)
+        output = get_content(self.dir_a.name)
         expected_output = []
         self.assertCountEqual(output, expected_output)
 
     @unittest.expectedFailure
     def test_read_nonexistent_dir(self):
-        get_contents('dir_that_does_not_exist')
+        get_content('dir_that_does_not_exist')
 
     @unittest.expectedFailure
     def test_read_private_dir(self):
-        get_contents(self.dir_private.name)
+        get_content(self.dir_private.name)
 
     def test_add_empty_file(self):
         new_file_path = os.path.join(self.dir_b.name, 'new_file.txt')
@@ -162,6 +172,7 @@ class TestServerLib(unittest.TestCase):
 
     def test_add_existing_dir(self):
         new_file_path = self.dir_root.name
+        orig_content = os.listdir(new_file_path)
         info = {'make_dir': True}
         output = add_content(new_file_path, info)
         expected_output = new_file_path, 304
@@ -169,8 +180,8 @@ class TestServerLib(unittest.TestCase):
         self.assertTrue(os.path.exists(new_file_path))
         self.assertTrue(os.path.isdir(new_file_path))
 
-        # Ensure that the dir contents were not removed.
-        self.assertGreater(len(os.listdir(new_file_path)), 0)
+        # Ensure that the dir contents were not modified.
+        self.assertCountEqual(os.listdir(new_file_path), orig_content)
 
     def test_add_invalid_info(self):
         new_file_path = os.path.join(self.dir_b.name, 'new_content')
@@ -179,6 +190,96 @@ class TestServerLib(unittest.TestCase):
         expected_output = new_file_path, 304
         self.assertEqual(output, expected_output)
         self.assertFalse(os.path.exists(new_file_path))
+
+    def test_replace_file(self):
+        src_path = self.file_b.name
+        dst_path = self.file_a.name
+        info = {'src_path': src_path}
+        output = replace_content(dst_path, info)
+        expected_output = self.dir_root.name, 302
+        self.assertEqual(output, expected_output)
+
+        # Ensure that the contents were overwritten.
+        f = open(dst_path, 'r+')
+        self.assertEqual(f.read(), 'Original text.')
+
+        # Cleanup
+        f.truncate(0)
+        f.close()
+
+    def test_replace_dir(self):
+        src_path = self.dir_b.name
+        src_files = os.listdir(src_path)
+        dst_path = self.dir_a.name
+        info = {'src_path': src_path}
+
+        output = replace_content(dst_path, info)
+        expected_output = dst_path, 302
+        self.assertEqual(output, expected_output)
+
+        # Ensure that the contents are now the same.
+        self.assertCountEqual(src_files, os.listdir(dst_path))
+
+        # Cleanup
+        shutil.rmtree(dst_path)
+
+    def test_replace_file_with_dir_invalid(self):
+        src_path = self.dir_b.name
+        dst_path = self.file_a.name
+        info = {'src_path': src_path}
+
+        output = replace_content(dst_path, info)
+        expected_output = self.dir_root.name, 304
+        self.assertEqual(output, expected_output)
+
+    def test_replace_dir_with_file_invalid(self):
+        src_path = self.file_a.name
+        dst_path = self.dir_b.name
+        info = {'src_path': src_path}
+
+        output = replace_content(dst_path, info)
+        expected_output = dst_path, 304
+        self.assertEqual(output, expected_output)
+
+    def test_replace_nonexistent_src(self):
+        src_path = 'fake_path_that_does_not_exist'
+        dst_path = self.dir_b.name
+        info = {'src_path': src_path}
+
+        output = replace_content(dst_path, info)
+        expected_output = dst_path, 304
+        self.assertEqual(output, expected_output)
+
+    def test_replace_nonexistent_dst(self):
+        src_path = self.dir_b.name
+        dst_path = 'fake_path_that_does_not_exist'
+        info = {'src_path': src_path}
+
+        output = replace_content(dst_path, info)
+        expected_output = dst_path, 304
+        self.assertEqual(output, expected_output)
+
+    def test_replace_invalid_request(self):
+        src_path = self.dir_b.name
+        dst_path = self.dir_a.name
+        orig_dst_files = os.listdir(dst_path)
+        info = {'bad_src_path': src_path}
+
+        output = replace_content(dst_path, info)
+        expected_output = dst_path, 304
+        self.assertEqual(output, expected_output)
+        self.assertEqual(orig_dst_files, os.listdir(dst_path))
+
+    def test_replace_same_file(self):
+        src_path = self.dir_b.name
+        dst_path = self.dir_b.name
+        orig_dst_files = os.listdir(dst_path)
+        info = {'bad_src_path': src_path}
+
+        output = replace_content(dst_path, info)
+        expected_output = dst_path, 304
+        self.assertEqual(output, expected_output)
+        self.assertEqual(orig_dst_files, os.listdir(dst_path))
 
     def test_delete_file(self):
         output = delete_content(self.file_b.name)
@@ -198,6 +299,7 @@ class TestServerLib(unittest.TestCase):
         output = delete_content(path)
         expected_output = path, 304
         self.assertEqual(output, expected_output)
+
 
 if __name__ == '__main__':
     unittest.main()

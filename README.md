@@ -8,14 +8,19 @@ on http://localhost:5000/. Available operations:
 supply the path from the root directory to the desired directory. The output is 
 a json string giving the name, size, owner, and permissions for each item in the 
 directory.
-* POST requests add the file/directory at the path (starting from the root
+* POST requests adds the file/directory at the path (starting from the root
 directory again). If it already exists then do nothing and leave the original 
 untouched. Can optionally write content to the new files as well. Must provide
 json data with a boolean 'make_dir' field, and optionally string 'text' field.
-* DELETE requests delete the file/directory at the path (starting from the root 
-directory again). If a directory is given, this will also delete all contents 
-of the directory. If successful this will redirect to the parent directory,
-otherwise it will redirect to the requested path.
+* PUT requests replaces the content of the file/directory at the path with the 
+content of a file/directory given within the json data, under required field 
+'src_path'. If the path points to a file then 'src_path' must also point to a
+file, similarly with a directory. Path must already exist else this will not
+make any changes.
+* DELETE requests delete the file/directory at the path . If a directory is 
+given, this will also delete all contents of the directory. If successful this 
+will redirect to the parent directory, otherwise it will redirect to the 
+requested path.
 
 # Requirements
 * Docker
@@ -45,7 +50,8 @@ docker exec -it <container id>  python server_test.py
 
 # Requests
 cURL can be used to transfer data from the command line to URLs. After launching
-the API, requests can be issued via the command line:
+the API, requests can be issued via the command line. If not using Windows, the 
+escaped double quotes can be removed by removing the backslash before each.
 ```bash
 # Get the contents of the root directory.
 curl http://localhost:5000/
@@ -54,10 +60,16 @@ curl http://localhost:5000/
 curl http://localhost:5000/foo
 
 # Write a new directory.
-curl -i -X POST -H "Content-Type: application/json" -d "{\"make_dir\":true\"}" http://localhost:5000/vmb34/foo
+curl -i -X POST -H "Content-Type: application/json" -d "{\"make_dir\":true\"}" http://localhost:5000/foo
 
 # Write a new file, bar.txt with provided text.
-curl -i -X POST -H "Content-Type: application/json" -d "{\"make_dir\":false,\"text\":\"Hello World\"}" http://localhost:5000/vmb34/foo/bar.txt
+curl -i -X POST -H "Content-Type: application/json" -d "{\"make_dir\":false,\"text\":\"Hello World\"}" http://localhost:5000/foo/bar.txt
+
+# Replace a directory with another one.
+curl -i -X PUT -H "Content-Type: application/json" -d "{\"src_path\":other/dir\"}" http://localhost:5000/foo
+
+# Replace a file with another one.
+curl -i -X PUT -H "Content-Type: application/json" -d "{\"src_path\":other/file.txt\"}" http://localhost:5000/foo.txt
 
 # Delete the file bar.txt.
 curl -X DELETE http://localhost:5000/foo/bar.txt
