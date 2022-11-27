@@ -1,10 +1,13 @@
+"""Library functions to handle file interactions."""
+
+from http import HTTPStatus
 import os
 from pwd import getpwuid
 import shutil
 
 
 def get_dir(path):
-    """Returns path if is a directory, else returns its parent directory"""
+    """Returns path if is a directory, else returns its parent directory."""
     if os.path.isdir(path):
         return path
     else:
@@ -59,19 +62,19 @@ def add_content(path, info):
         and a statuscode.
     """
     if os.path.exists(path):
-        return get_dir(path), 304
+        return get_dir(path), HTTPStatus.NOT_MODIFIED
 
     if 'make_dir' not in info or not isinstance(info['make_dir'], bool):
-        return path, 304
+        return path, HTTPStatus.NOT_MODIFIED
 
     if info['make_dir']:
         os.mkdir(path)
-        return path, 302
+        return path, HTTPStatus.FOUND
     else:
         with open(path, 'w+') as fp:
             if 'text' in info and isinstance(info['text'], str):
                 fp.write(info['text'])
-        return os.path.dirname(path), 302
+        return os.path.dirname(path), HTTPStatus.FOUND
 
 
 def replace_content(dst_path, info, root_dir=''):
@@ -92,29 +95,29 @@ def replace_content(dst_path, info, root_dir=''):
         modified file and a statuscode.
     """
     if not os.path.exists(dst_path):
-        return dst_path, 304
+        return dst_path, HTTPStatus.NOT_MODIFIED
 
     if 'src_path' not in info or not isinstance(info['src_path'], str):
-        return get_dir(dst_path), 304
+        return get_dir(dst_path), HTTPStatus.NOT_MODIFIED
 
     src_path = os.path.join(root_dir, info['src_path'])
     if not os.path.exists(src_path) or dst_path == src_path:
-        return get_dir(dst_path), 304
+        return get_dir(dst_path), HTTPStatus.NOT_MODIFIED
 
     if os.path.isdir(dst_path) and os.path.isdir(src_path):
-        # Replace directory
+        # Replace directory.
         shutil.rmtree(dst_path)
         shutil.copytree(src_path, dst_path)
-        return dst_path, 302
+        return dst_path, HTTPStatus.FOUND
 
     elif not os.path.isdir(dst_path) and not os.path.isdir(src_path):
-        # Replace file
+        # Replace file.
         shutil.copyfile(src_path, dst_path)
-        return os.path.dirname(dst_path), 302
+        return os.path.dirname(dst_path), HTTPStatus.FOUND
 
     else:
         # Invalid call.
-        return get_dir(dst_path), 304
+        return get_dir(dst_path), HTTPStatus.NOT_MODIFIED
 
 
 def delete_content(path):
@@ -129,9 +132,9 @@ def delete_content(path):
     """
     if os.path.isdir(path):
         shutil.rmtree(path)
-        return os.path.dirname(path), 302
+        return os.path.dirname(path), HTTPStatus.FOUND
     elif os.path.isfile(path):
         os.remove(path)
-        return os.path.dirname(path), 302
+        return os.path.dirname(path), HTTPStatus.FOUND
     else:
-        return path, 304
+        return path, HTTPStatus.NOT_MODIFIED

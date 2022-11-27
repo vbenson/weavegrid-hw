@@ -13,10 +13,10 @@ directory again). If it already exists then do nothing and leave the original
 untouched. Can optionally write content to the new files as well. Must provide
 json data with a boolean 'make_dir' field, and optionally string 'text' field.
 * PUT requests replaces the content of the file/directory at the path with the 
-content of a file/directory given within the json data, under required field 
-'src_path'. If the path points to a file then 'src_path' must also point to a
-file, similarly with a directory. Path must already exist else this will not
-make any changes.
+content of a file/directory given within the json data, under required string 
+field 'src_path'. If the path points to a file then 'src_path' must also point 
+to a file, similarly with a directory. Path must already exist else this will
+not make any changes.
 * DELETE requests delete the file/directory at the path . If a directory is 
 given, this will also delete all contents of the directory. If successful this 
 will redirect to the parent directory, otherwise it will redirect to the 
@@ -26,7 +26,7 @@ requested path.
 * Docker
 
 # Launching
-Either run using the provided run.sh script or run the commands below yourself.
+Either launch using the provided run.sh script or run the commands below.
 To run the run.sh script, simply provide the full local path you'd like to 
 browse as an argument.
 ```bash
@@ -40,7 +40,11 @@ docker build -t weavegrid-hw:dev .
 
 # Run the application in the container. Make sure to specify a port mapping.
 docker run -p 5000:5000 --mount type=bind,source=<local directory to browse>,target=/root_dir --rm weavegrid-hw:dev /root_dir
+```
 
+# Testing
+Once the application is launched you can test by issuing the following commands:
+```
 # To test, run the above two commands, then in a separate terminal first run:
 docker ps
 
@@ -51,7 +55,7 @@ docker exec -it <container id>  python server_test.py
 # Requests
 cURL can be used to transfer data from the command line to URLs. After launching
 the API, requests can be issued via the command line. If not using Windows, the 
-escaped double quotes can be removed by removing the backslash before each.
+backslashes escaping the double quotes can be removed.
 ```bash
 # Get the contents of the root directory.
 curl http://localhost:5000/

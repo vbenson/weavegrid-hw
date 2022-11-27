@@ -1,3 +1,4 @@
+from http import HTTPStatus
 import os
 import tempfile
 import shutil
@@ -98,7 +99,7 @@ class TestServerLib(unittest.TestCase):
         new_file_path = os.path.join(self.dir_b.name, 'new_file.txt')
         info = {'make_dir': False}
         output = add_content(new_file_path, info)
-        expected_output = self.dir_b.name, 302
+        expected_output = self.dir_b.name, HTTPStatus.FOUND
         self.assertEqual(output, expected_output)
         self.assertTrue(os.path.exists(new_file_path))
         f = open(new_file_path, 'r')
@@ -112,7 +113,7 @@ class TestServerLib(unittest.TestCase):
         new_file_path = os.path.join(self.dir_b.name, 'new_file.txt')
         info = {'make_dir': False, 'text': 123}
         output = add_content(new_file_path, info)
-        expected_output = self.dir_b.name, 302
+        expected_output = self.dir_b.name, HTTPStatus.FOUND
         self.assertEqual(output, expected_output)
         self.assertTrue(os.path.exists(new_file_path))
         f = open(new_file_path, 'r')
@@ -127,7 +128,7 @@ class TestServerLib(unittest.TestCase):
         text = 'Hello World!'
         info = {'make_dir': False, 'text': text}
         output = add_content(new_file_path, info)
-        expected_output = self.dir_b.name, 302
+        expected_output = self.dir_b.name, HTTPStatus.FOUND
         self.assertEqual(output, expected_output)
         self.assertTrue(os.path.exists(new_file_path))
         f = open(new_file_path, 'r')
@@ -141,7 +142,7 @@ class TestServerLib(unittest.TestCase):
         new_file_path = self.file_b.name
         info = {'make_dir': False, 'text': 'Hello World!'}
         output = add_content(new_file_path, info)
-        expected_output = self.dir_b.name, 304
+        expected_output = self.dir_b.name, HTTPStatus.NOT_MODIFIED
         self.assertEqual(output, expected_output)
         self.assertTrue(os.path.exists(new_file_path))
 
@@ -154,7 +155,7 @@ class TestServerLib(unittest.TestCase):
         new_file_path = os.path.join(self.dir_b.name, 'new_dir')
         info = {'make_dir': True}
         output = add_content(new_file_path, info)
-        expected_output = new_file_path, 302
+        expected_output = new_file_path, HTTPStatus.FOUND
         self.assertEqual(output, expected_output)
         self.assertTrue(os.path.exists(new_file_path))
         self.assertTrue(os.path.isdir(new_file_path))
@@ -166,7 +167,7 @@ class TestServerLib(unittest.TestCase):
         new_file_path = os.path.join(self.dir_b.name, 'new_content')
         info = {'make_dir': 123}
         output = add_content(new_file_path, info)
-        expected_output = new_file_path, 304
+        expected_output = new_file_path, HTTPStatus.NOT_MODIFIED
         self.assertEqual(output, expected_output)
         self.assertFalse(os.path.exists(new_file_path))
 
@@ -175,7 +176,7 @@ class TestServerLib(unittest.TestCase):
         orig_content = os.listdir(new_file_path)
         info = {'make_dir': True}
         output = add_content(new_file_path, info)
-        expected_output = new_file_path, 304
+        expected_output = new_file_path, HTTPStatus.NOT_MODIFIED
         self.assertEqual(output, expected_output)
         self.assertTrue(os.path.exists(new_file_path))
         self.assertTrue(os.path.isdir(new_file_path))
@@ -187,7 +188,7 @@ class TestServerLib(unittest.TestCase):
         new_file_path = os.path.join(self.dir_b.name, 'new_content')
         info = {'missing': 123}
         output = add_content(new_file_path, info)
-        expected_output = new_file_path, 304
+        expected_output = new_file_path, HTTPStatus.NOT_MODIFIED
         self.assertEqual(output, expected_output)
         self.assertFalse(os.path.exists(new_file_path))
 
@@ -196,7 +197,7 @@ class TestServerLib(unittest.TestCase):
         dst_path = self.file_a.name
         info = {'src_path': src_path}
         output = replace_content(dst_path, info)
-        expected_output = self.dir_root.name, 302
+        expected_output = self.dir_root.name, HTTPStatus.FOUND
         self.assertEqual(output, expected_output)
 
         # Ensure that the contents were overwritten.
@@ -214,7 +215,7 @@ class TestServerLib(unittest.TestCase):
         info = {'src_path': src_path}
 
         output = replace_content(dst_path, info)
-        expected_output = dst_path, 302
+        expected_output = dst_path, HTTPStatus.FOUND
         self.assertEqual(output, expected_output)
 
         # Ensure that the contents are now the same.
@@ -229,7 +230,7 @@ class TestServerLib(unittest.TestCase):
         info = {'src_path': src_path}
 
         output = replace_content(dst_path, info)
-        expected_output = self.dir_root.name, 304
+        expected_output = self.dir_root.name, HTTPStatus.NOT_MODIFIED
         self.assertEqual(output, expected_output)
 
     def test_replace_dir_with_file_invalid(self):
@@ -238,7 +239,7 @@ class TestServerLib(unittest.TestCase):
         info = {'src_path': src_path}
 
         output = replace_content(dst_path, info)
-        expected_output = dst_path, 304
+        expected_output = dst_path, HTTPStatus.NOT_MODIFIED
         self.assertEqual(output, expected_output)
 
     def test_replace_nonexistent_src(self):
@@ -247,7 +248,7 @@ class TestServerLib(unittest.TestCase):
         info = {'src_path': src_path}
 
         output = replace_content(dst_path, info)
-        expected_output = dst_path, 304
+        expected_output = dst_path, HTTPStatus.NOT_MODIFIED
         self.assertEqual(output, expected_output)
 
     def test_replace_nonexistent_dst(self):
@@ -256,7 +257,7 @@ class TestServerLib(unittest.TestCase):
         info = {'src_path': src_path}
 
         output = replace_content(dst_path, info)
-        expected_output = dst_path, 304
+        expected_output = dst_path, HTTPStatus.NOT_MODIFIED
         self.assertEqual(output, expected_output)
 
     def test_replace_invalid_request(self):
@@ -266,7 +267,7 @@ class TestServerLib(unittest.TestCase):
         info = {'bad_src_path': src_path}
 
         output = replace_content(dst_path, info)
-        expected_output = dst_path, 304
+        expected_output = dst_path, HTTPStatus.NOT_MODIFIED
         self.assertEqual(output, expected_output)
         self.assertEqual(orig_dst_files, os.listdir(dst_path))
 
@@ -277,19 +278,19 @@ class TestServerLib(unittest.TestCase):
         info = {'bad_src_path': src_path}
 
         output = replace_content(dst_path, info)
-        expected_output = dst_path, 304
+        expected_output = dst_path, HTTPStatus.NOT_MODIFIED
         self.assertEqual(output, expected_output)
         self.assertEqual(orig_dst_files, os.listdir(dst_path))
 
     def test_delete_file(self):
         output = delete_content(self.file_b.name)
-        expected_output = self.dir_b.name, 302
+        expected_output = self.dir_b.name, HTTPStatus.FOUND
         self.assertEqual(output, expected_output)
         self.assertFalse(os.path.exists(self.file_b.name))
 
     def test_delete_dir(self):
         output = delete_content(self.dir_b.name)
-        expected_output = self.dir_root.name, 302
+        expected_output = self.dir_root.name, HTTPStatus.FOUND
         self.assertEqual(output, expected_output)
         self.assertFalse(os.path.exists(self.dir_b.name))
         self.assertFalse(os.path.exists(self.file_b.name))
@@ -297,7 +298,7 @@ class TestServerLib(unittest.TestCase):
     def test_delete_nonexistent_path(self):
         path = 'fake_path_that_does_not_exist'
         output = delete_content(path)
-        expected_output = path, 304
+        expected_output = path, HTTPStatus.NOT_MODIFIED
         self.assertEqual(output, expected_output)
 
 

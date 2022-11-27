@@ -1,3 +1,6 @@
+"""Launch a web server to browse, create, modify, and delete files/directories.
+"""
+
 import os
 import json
 import sys
